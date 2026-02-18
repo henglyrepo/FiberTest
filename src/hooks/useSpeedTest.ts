@@ -13,14 +13,16 @@ export interface SpeedTestResult {
 }
 
 const CDN_ENDPOINTS = [
-  "https://speed.cloudflare.com/__down?bytes=10000000",
-  "https://speed.hetzner.de/1MB.bin",
-  "https://proof.ovh.net/files/10Mb.dat",
+  "https://speed.cloudflare.com/__down?bytes=25000000",
+  "https://speed.cloudflare.com/__down?bytes=25000000",
+  "https://speed.cloudflare.com/__down?bytes=25000000",
+  "https://speed.cloudflare.com/__down?bytes=25000000",
 ];
 
 const UPLOAD_ENDPOINTS = [
   "https://httpbin.org/post",
-  "https://reqres.in/api/posts",
+  "https://httpbin.org/post",
+  "https://httpbin.org/post",
 ];
 
 function generateRandomData(size: number): Blob {
@@ -45,13 +47,12 @@ export function useSpeedTest() {
   const [speedHistory, setSpeedHistory] = useState<number[]>([]);
 
   const abortControllerRef = useRef<AbortController | null>(null);
-  const startTimeRef = useRef<number>(0);
 
   const measurePing = useCallback(async (): Promise<{ ping: number; jitter: number }> => {
     const times: number[] = [];
     const testUrl = "https://speed.cloudflare.com/__down?bytes=0";
     
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       const start = performance.now();
       try {
         await fetch(testUrl, { 
@@ -61,7 +62,7 @@ export function useSpeedTest() {
         });
         const end = performance.now();
         times.push(end - start);
-        await new Promise(r => setTimeout(r, 100));
+        if (i < 5) await new Promise(r => setTimeout(r, 150));
       } catch {
         times.push(999);
       }
@@ -82,99 +83,162 @@ export function useSpeedTest() {
   }, []);
 
   const testDownload = useCallback(async (): Promise<number> => {
-    let totalDownloaded = 0;
-    const speeds: number[] = [];
-    
-    const downloadChunk = async (url: string, index: number): Promise<number> => {
+    const totalBytesRef = { current: 0 };
+    const startTimeRef = { current: 0 };
+    const speedSamples: number[] = [];
+    let resolved = false;
+
+    const downloadFile = async (url: string): Promise<number> => {
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", url);
         xhr.responseType = "blob";
         
-        startTimeRef.current = performance.now();
-        
-        xhr.onprogress = () => {
-          const elapsed = (performance.now() - startTimeRef.current) / 1000;
-          if (elapsed > 0) {
-            const speed = (totalDownloaded / elapsed) * 8 / 1000000;
-            setCurrentSpeed(speed);
-            speeds[index] = speed;
-            setSpeedHistory(prev => [...prev.slice(-30), speed]);
-          }
-        };
-        
         xhr.onload = () => {
           if (xhr.status === 200) {
-            totalDownloaded += xhr.response.size;
-            resolve(xhr.response.size);
+            const bytes = xhr.response.size;
+            totalBytesRef.current += bytes;
+            
+            const elapsed = (performance.now() - startTimeRef.current) / 1000;
+            if (elapsed > 0) {
+              const speed = (totalBytesRef.current / elapsed) * 8 / 1000000;
+              speedSamples.push(speed);
+            }
+            
+            resolve(bytes);
           } else {
             resolve(0);
           }
         };
         
         xhr.onerror = () => resolve(0);
-        xhr.send();
+        xhr.onabort = () => resolve(0);
+        
+        try {
+          xhr.send();
+        } catch {
+          resolve(0);
+        }
       });
     };
 
-    const streams = Math.min(4, CDN_ENDPOINTS.length);
-    const promises: Promise<number>[] = [];
-    
-    for (let i = 0; i < streams; i++) {
-      promises.push(downloadChunk(CDN_ENDPOINTS[i % CDN_ENDPOINTS.length], i));
+    const updateSpeed = () => {
+      if (resolved) return;
+      const elapsed = (performance.now() - startTimeRef.current) / 1000;
+      if (elapsed > 0.1) {
+        const currentSpeedCalc = (totalBytesRef.current / elapsed) * 8 / 1000000;
+        setCurrentSpeed(currentSpeedCalc);
+        setSpeedHistory(prev => {
+          const newHistory = [...prev, currentSpeedCalc];
+          return newHistory.slice(-60);
+        });
+      }
+    };
+
+    const progressInterval = setInterval(updateSpeed, 100);
+
+    try {
+      startTimeRef.current = performance.now();
+      
+      const downloads = CDN_ENDPOINTS.map(url => downloadFile(url));
+      await Promise.all(downloads);
+      
+      clearInterval(progressInterval);
+      resolved = true;
+
+      const totalElapsed = (performance.now() - startTimeRef.current) / 1000;
+      const finalSpeed = totalElapsed > 0 
+        ? (totalBytesRef.current / totalElapsed) * 8 / 1000000 
+        : 0;
+
+      const avgSpeed = speedSamples.length > 0
+        ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length
+        : finalSpeed;
+
+      return Math.max(finalSpeed, avgSpeed);
+    } catch (error) {
+      clearInterval(progressInterval);
+      resolved = true;
+      return 0;
     }
-    
-    await Promise.all(promises);
-    
-    const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
-    return avgSpeed || 0;
   }, []);
 
   const testUpload = useCallback(async (): Promise<number> => {
-    const dataSize = 2 * 1024 * 1024;
+    const dataSize = 4 * 1024 * 1024;
     const data = generateRandomData(dataSize);
-    const speeds: number[] = [];
-    
-    const uploadData = async (endpoint: string, index: number): Promise<number> => {
+    const totalBytesRef = { current: 0 };
+    const startTimeRef = { current: 0 };
+    const speedSamples: number[] = [];
+    let resolved = false;
+
+    const uploadFile = async (endpoint: string): Promise<number> => {
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", endpoint);
         
-        const start = performance.now();
+        let lastUpdate = 0;
         
-        xhr.upload.onprogress = () => {
-          const elapsed = (performance.now() - start) / 1000;
-          if (elapsed > 0) {
-            const speed = (dataSize * 8) / elapsed / 1000000;
-            setCurrentSpeed(speed);
-            speeds[index] = speed;
-            setSpeedHistory(prev => [...prev.slice(-30), speed]);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            totalBytesRef.current = event.loaded;
+            
+            const elapsed = (performance.now() - startTimeRef.current) / 1000;
+            if (elapsed > 0.1 && elapsed - lastUpdate > 0.1) {
+              const speed = (event.loaded / elapsed) * 8 / 1000000;
+              speedSamples.push(speed);
+              lastUpdate = elapsed;
+              
+              setCurrentSpeed(speed);
+              setSpeedHistory(prev => {
+                const newHistory = [...prev, speed];
+                return newHistory.slice(-60);
+              });
+            }
           }
         };
         
         xhr.onload = () => {
-          const elapsed = (performance.now() - start) / 1000;
-          const speed = elapsed > 0 ? (dataSize * 8) / elapsed / 1000000 : 0;
-          speeds[index] = speed;
-          resolve(speed);
+          const elapsed = (performance.now() - startTimeRef.current) / 1000;
+          if (elapsed > 0) {
+            const speed = (dataSize / elapsed) * 8 / 1000000;
+            speedSamples.push(speed);
+          }
+          resolve(dataSize);
         };
         
         xhr.onerror = () => resolve(0);
-        xhr.send(data);
+        xhr.onabort = () => resolve(0);
+        
+        try {
+          xhr.send(data);
+        } catch {
+          resolve(0);
+        }
       });
     };
 
-    const streams = 2;
-    const promises: Promise<number>[] = [];
+    startTimeRef.current = performance.now();
     
-    for (let i = 0; i < streams; i++) {
-      promises.push(uploadData(UPLOAD_ENDPOINTS[i % UPLOAD_ENDPOINTS.length], i));
+    try {
+      const uploads = UPLOAD_ENDPOINTS.map(endpoint => uploadFile(endpoint));
+      await Promise.all(uploads);
+      
+      resolved = true;
+
+      const totalElapsed = (performance.now() - startTimeRef.current) / 1000;
+      const finalSpeed = totalElapsed > 0 
+        ? (dataSize * UPLOAD_ENDPOINTS.length / totalElapsed) * 8 / 1000000 
+        : 0;
+
+      const avgSpeed = speedSamples.length > 0
+        ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length
+        : finalSpeed;
+
+      return Math.max(finalSpeed, avgSpeed);
+    } catch (error) {
+      resolved = true;
+      return 0;
     }
-    
-    await Promise.all(promises);
-    
-    const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
-    return avgSpeed || 0;
   }, []);
 
   const startTest = useCallback(async () => {
@@ -182,6 +246,7 @@ export function useSpeedTest() {
     setPhase("ping");
     setProgress(0);
     setCurrentSpeed(0);
+    setSpeedHistory([]);
     abortControllerRef.current = new AbortController();
 
     try {
