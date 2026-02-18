@@ -42,6 +42,7 @@ export function useSpeedTest() {
     upload: 0,
     jitter: 0,
   });
+  const [speedHistory, setSpeedHistory] = useState<number[]>([]);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -98,6 +99,7 @@ export function useSpeedTest() {
             const speed = (totalDownloaded / elapsed) * 8 / 1000000;
             setCurrentSpeed(speed);
             speeds[index] = speed;
+            setSpeedHistory(prev => [...prev.slice(-30), speed]);
           }
         };
         
@@ -116,7 +118,7 @@ export function useSpeedTest() {
     };
 
     const streams = Math.min(4, CDN_ENDPOINTS.length);
-    const promises: Promise<any>[] = [];
+    const promises: Promise<number>[] = [];
     
     for (let i = 0; i < streams; i++) {
       promises.push(downloadChunk(CDN_ENDPOINTS[i % CDN_ENDPOINTS.length], i));
@@ -146,6 +148,7 @@ export function useSpeedTest() {
             const speed = (dataSize * 8) / elapsed / 1000000;
             setCurrentSpeed(speed);
             speeds[index] = speed;
+            setSpeedHistory(prev => [...prev.slice(-30), speed]);
           }
         };
         
@@ -162,7 +165,7 @@ export function useSpeedTest() {
     };
 
     const streams = 2;
-    const promises: Promise<any>[] = [];
+    const promises: Promise<number>[] = [];
     
     for (let i = 0; i < streams; i++) {
       promises.push(uploadData(UPLOAD_ENDPOINTS[i % UPLOAD_ENDPOINTS.length], i));
@@ -213,6 +216,7 @@ export function useSpeedTest() {
     setProgress(0);
     setCurrentSpeed(0);
     setResults({ ping: 0, download: 0, upload: 0, jitter: 0 });
+    setSpeedHistory([]);
   }, []);
 
   return {
@@ -221,6 +225,7 @@ export function useSpeedTest() {
     progress,
     currentSpeed,
     results,
+    speedHistory,
     startTest,
     reset,
   };

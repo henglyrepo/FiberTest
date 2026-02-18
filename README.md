@@ -1,17 +1,15 @@
-# FiberTest - Fast & Free Internet Speed Test
+# FiberTest - Premium Internet Speed Test
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4-38bdf8)](https://tailwindcss.com/)
 
-A lightweight, free and open-source **internet speed test** web application built with Next.js. Test your **download speed**, **upload speed**, **ping**, and **jitter** - completely free, no registration required.
+A lightweight, free and open-source **internet speed test** web application built with Next.js. Test your **download speed**, **upload speed**, **ping**, and **jitter** with a premium glassmorphism UI - completely free, no registration required.
 
-> **Fast, accurate, and private** - Measure your network bandwidth in seconds with our HTML5-based speed test.
+> **Professional Grade** - Measure your network bandwidth with precision in a sleek, modern interface
 
-##
-
-![FiberTest Speed Test](https://via.placeholder.com/800x400/1a1a2e/ffffff?text=FiberTest+-+Internet+Speed+Test)
+![FiberTest Premium UI](./public/image.png)
 
 ## Features
 
@@ -19,14 +17,17 @@ A lightweight, free and open-source **internet speed test** web application buil
 - 📤 **Upload Speed Test** - Measure your upload bandwidth in Mbps
 - 🏓 **Ping Test** - Check your network latency in milliseconds
 - 📊 **Jitter Test** - Measure connection stability
-- 🌐 **ISP Detection** - Automatic IP, location, and ISP identification
+- 🌐 **Enhanced ISP Detection** - IP, Location, Country, ISP, ASN, Timezone
+- 📈 **Real-time Speed Graph** - Live canvas visualization during tests
+- 🎯 **Performance Rating** - Excellent/Very Good/Good/Fair based on results
 - 📱 **Mobile Responsive** - Works on desktop and mobile devices
-- 🎨 **Modern UI** - Clean, dark-themed interface with animated gauge
+- ✨ **Premium Glassmorphism UI** - Modern dark theme with blur effects
+- 🎬 **Animated Visuals** - Floating particles, pulsing rings, smooth transitions
 - 🔒 **Privacy First** - No data collection, no registration
 
 ## Live Demo
 
-**[Speed Test Demo](https://your-domain.vercel.app)** - Deploy to Vercel and add your URL
+**[FiberTest Demo](https://fiber-test-ivory.vercel.app/)** - Test your connection now!
 
 ## Quick Start
 
@@ -62,6 +63,7 @@ FiberTest measures your internet connection speed using the following methods:
 2. **Download Test**: Downloads data from multiple CDN endpoints simultaneously to measure bandwidth
 3. **Upload Test**: Uploads random data to measure upload throughput
 4. **Jitter Calculation**: Analyzes ping variations to determine connection stability
+5. **Real-time Graph**: Visualizes speed changes during the test with live updates
 
 ## Tech Stack
 
@@ -69,7 +71,6 @@ FiberTest measures your internet connection speed using the following methods:
 - **Language**: [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
 - **Styling**: [TailwindCSS 4](https://tailwindcss.com/) - Utility-first CSS framework
 - **Icons**: [Lucide React](https://lucide.dev/) - Beautiful icons
-- **Charts**: [Recharts](https://recharts.org/) - Chart library (optional)
 
 ## API Endpoints Used
 
@@ -88,13 +89,15 @@ FiberTest/
 │   ├── app/
 │   │   ├── page.tsx          # Main speed test page
 │   │   ├── layout.tsx        # Root layout
-│   │   └── globals.css       # Global styles
+│   │   └── globals.css       # Global styles & animations
 │   ├── components/
-│   │   ├── SpeedGauge.tsx    # Animated speed gauge
-│   │   └── ServerInfo.tsx    # ISP information display
+│   │   ├── SpeedGauge.tsx   # Animated 3D speed gauge
+│   │   ├── SpeedGraph.tsx   # Real-time speed graph
+│   │   └── ServerInfo.tsx   # Network information display
 │   └── hooks/
-│       └── useSpeedTest.ts   # Speed test logic
-├── public/                   # Static assets
+│       └── useSpeedTest.ts  # Speed test logic
+├── public/
+│   └── image.png            # UI screenshot
 ├── next.config.ts           # Next.js configuration
 ├── tailwind.config.ts       # Tailwind configuration
 ├── tsconfig.json            # TypeScript configuration
@@ -174,7 +177,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## Keywords
 
-internet speed test, speed test, download speed, upload speed, bandwidth test, network speed test, ping test, latency, jitter, Mbps, free speed test, open source speed test, HTML5 speed test, self-hosted speed test, Next.js speed test, React speed test
+internet speed test, speed test, download speed, upload speed, bandwidth test, network speed test, ping test, latency, jitter, Mbps, free speed test, open source speed test, HTML5 speed test, self-hosted speed test, Next.js speed test, React speed test, glassmorphism UI, premium speed test
 
 ---
 
